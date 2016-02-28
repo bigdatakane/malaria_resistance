@@ -1,0 +1,131 @@
+---
+title: "Which mutation transitions and drug concentrations influence growth?"
+author: "Andrew Nguyen"
+date: "2016-February-27"
+output: 
+  pdf_document: 
+    toc: true
+---
+
+#regression trees
+**load libraies and read in data**
+```{r library and data}
+library(ggplot2)
+library(tidyr)
+library(rpart)
+library(rpart.plot)
+
+
+mal_long<-read.csv("../Data/20160227_final_dataset_malaria_pyr_cyc_abs_relative.csv")
+```
+
+##Regression tree analysis for pyr
+###pyr delta fitness
+```{r regression tree for pyr}
+#construct formula
+form<-as.formula(pyr_abs~changed+drug)
+#construct regression tree
+tree.1<-rpart(form,data=mal_long,control=rpart.control(minsplit=20,cp=0),method="anova")
+printcp(tree.1)
+#prune tree
+tree.1$cptable[which.min(tree.1$cptable[,"xerror"]),"CP"]
+new.tree<-prune(tree.1, cp=0)
+#plot tree
+rpart.plot(new.tree,type=3,extra=100)
+#checking variation explained
+mal_long$predicted<-predict(new.tree)
+#linear model
+mod1<-lm(pyr_abs~predicted,data=mal_long)
+summary(mod1)
+#color by start
+plot(mal_long$predicted,mal_long$pyr_abs,col=as.factor(mal_long$start))
+
+
+#color by change class
+#point size correspond to drug
+mal_long$sizing<-c(rep(.5,32),rep(2.75,32),rep(1,32),rep(1.25,32),rep(1.5,32),rep(2,32),rep(2.5,32),rep(3,32),rep(3.5,32),rep(4,32))
+
+plot(mal_long$predicted,mal_long$pyr_abs,col=as.factor(mal_long$changed),pch=16,cex=2)
+#,cex=mal_long$sizing
+
+#,xlim=c(-2,2),ylim=c(-1.5,1.5)
+abline(mod1)
+
+#checking the residuals
+par(mfrow=c(2,2))
+plot(mod1)
+par(mfrow=c(1,1))
+```
+###pyr relative fitness
+```{r pyr relative fitness}
+form<-as.formula(pyr_relative_measure~changed+drug)
+#construct regression tree
+pyr_rel_meas<-rpart(form,data=mal_long,control=rpart.control(minsplit=20,cp=0),method="anova")
+printcp(pyr_rel_meas)
+#prune tree
+pyr_rel_meas$cptable[which.min(pyr_rel_meas$cptable[,"xerror"]),"CP"]
+pyr_rel_meas2<-prune(pyr_rel_meas, cp=0)
+#plot tree
+rpart.plot(pyr_rel_meas2,type=3,extra=100)
+#checking variation explained
+mal_long$pyr_rel_meas_predicted<-predict(new.tree)
+#linear model
+mod2<-lm(pyr_abs~pyr_rel_meas_predicted,data=mal_long)
+summary(mod2)
+#color by start
+plot(mal_long$pyr_rel_meas_predicted,mal_long$pyr_abs,col=as.factor(mal_long$start))
+abline(mod2)
+
+#checking the residuals
+par(mfrow=c(2,2))
+plot(mod2)
+par(mfrow=c(1,1))
+```
+
+
+##Regression tree analysis for cyc
+###cyc delta fitness
+```{r cyc relative fitness}
+form<-as.formula(cyc_relative~changed+drug)
+#construct regression tree
+cyc_relative_tree<-rpart(form,data=mal_long,control=rpart.control(minsplit=20,cp=0),method="anova")
+printcp(cyc_relative_tree)
+#prune tree
+cyc_relative_tree$cptable[which.min(cyc_relative_tree$cptable[,"xerror"]),"CP"]
+cyc_relative_tree2<-prune(cyc_relative_tree, cp=00498)
+#plot tree
+rpart.plot(cyc_relative_tree,type=3,extra=100)
+
+mal_long$cyc_relative_prediction<-predict(cyc_relative_tree)
+mod6<-lm(cyc_relative~cyc_relative_prediction,data=mal_long)
+summary(mod6)
+
+plot(mal_long$cyc_relative,mal_long$cyc_relative_prediction)
+abline(mod6)
+```
+
+###cyc relative fitness
+```{r cyc delta fitness}
+form<-as.formula(cyc_abs~changed+drug)
+#construct regression tree
+cyc_abs_tree<-rpart(form,data=mal_long,control=rpart.control(minsplit=20,cp=0),method="anova")
+printcp(cyc_abs_tree)
+#prune tree
+cyc_abs_tree$cptable[which.min(cyc_abs_tree$cptable[,"xerror"]),"CP"]
+cyc_abs_tree2<-prune(cyc_abs_tree, cp=0)
+#plot tree
+rpart.plot(cyc_abs_tree2,type=3,extra=100)
+
+mal_long$cyc_abs_prediction<-predict(cyc_abs_tree2)
+mod5<-lm(cyc_abs~cyc_abs_prediction,data=mal_long)
+summary(mod5)
+
+plot(mal_long$cyc_abs,mal_long$cyc_abs_prediction)
+abline(mod5)
+```
+
+#SessionInfo
+```{r session info}
+sessionInfo()
+```
+
