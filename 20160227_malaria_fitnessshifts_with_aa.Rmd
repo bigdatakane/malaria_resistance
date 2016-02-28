@@ -1,0 +1,118 @@
+---
+title: "Fitness shifts accompany amino acid changes"
+author: "Andrew Nguyen"
+date: "2016-February-27"
+output: pdf_document
+---
+#Questions/Objectives
+#Hypotheses
+
+#load libraries first
+```{r libraries}
+library(ggplot2)
+library(tidyr)
+library(rpart)
+library(rpart.plot)
+```
+
+#loading in file and changing to long format
+##PYR drug
+```{r read in file and change to long format}
+#read in pyr file
+pyr_abs<-read.csv("20160227_aa_shifts_drug.csv")
+pyr_relative<-read.csv("20160227_aa_shifts_drug_scaled_fitness.csv")
+#change alleles to factors
+pyr_abs$starting_allele<-as.factor(as.character(malaria$starting_allele))
+pyr_abs$end_allele<-as.factor(pyr_abs$end_allele)
+
+#read in cyc files
+cyc<-read.csv("20160227_cyc_drug_dose_aa_shifts.csv")
+
+#change to long format
+mal_long <- gather(pyr_abs, condition, measurement, drug1:drug10)
+mal_long2<- gather(pyr_relative, condition, measurement, drug1:drug10)
+mal_long$drug<-c(rep(1,32),rep(2,32),rep(3,32),rep(4,32),rep(5,32),rep(6,32),rep(7,32),rep(8,32),rep(9,32),rep(10,32))
+mal_long$relative_measure<-mal_long2$measurement
+
+#write.csv(mal_long,"20160227_pyr_aa_shifts_abs_relative.csv")
+
+```
+
+#Regression tree analysis for pyr
+```{r regression tree for pyr}
+#construct formula
+form<-as.formula(measurement~changed+drug)
+#construct regression tree
+tree.1<-rpart(form,data=mal_long,control=rpart.control(minsplit=20,cp=0),method="anova")
+printcp(tree.1)
+#prune tree
+tree.1$cptable[which.min(tree.1$cptable[,"xerror"]),"CP"]
+new.tree<-prune(tree.1, cp=0)
+#plot tree
+rpart.plot(new.tree,type=3,extra=100)
+
+
+#checking variation explained
+mal_long$predicted<-predict(new.tree)
+#linear model
+mod1<-lm(measurement~predicted,data=mal_long)
+summary(mod1)
+#color by start
+plot(mal_long$predicted,mal_long$measurement,col=as.factor(mal_long$start))
+
+
+#color by change class
+#point size correspond to drug
+mal_long$sizing<-c(rep(.5,32),rep(2.75,32),rep(1,32),rep(1.25,32),rep(1.5,32),rep(2,32),rep(2.5,32),rep(3,32),rep(3.5,32),rep(4,32))
+
+plot(mal_long$predicted,mal_long$measurement,col=as.factor(mal_long$changed),pch=16,cex=2)
+#,cex=mal_long$sizing
+
+#,xlim=c(-2,2),ylim=c(-1.5,1.5)
+abline(mod1)
+
+#checking the residuals
+par(mfrow=c(2,2))
+plot(mod1)
+par(mfrow=c(1,1))
+```
+
+#compare regression tree with CYC growth data
+```{r check the data}
+cyc<-read.csv("20160227_cyc_drug_dose_aa_shifts.csv")
+cyc_long <- gather(cyc, condition, measurement, drug1:drug10)
+mod2<-lm(cyc_long$measurement~mal_long$predicted)
+summary(mod2)
+
+plot(mal_long$predicted,cyc_long$measurement)
+abline(mod2)
+plot(mod2)
+
+#comparing direct measurements of pyr with cyc 
+mod3<-lm(cyc_long$measurement~mal_long$measurement)
+summary(mod3)
+plot(mal_long$measurement,cyc_long$measurement)
+
+```
+
+#regression tree analysis for cyc
+```{r}
+form<-as.formula(measurement~changed+drug)
+cyc_long$drug<-mal_long$drug
+#construct regression tree
+tree.2<-rpart(form,data=cyc_long,control=rpart.control(minsplit=20,cp=0),method="anova")
+printcp(tree.2)
+#prune tree
+tree.2$cptable[which.min(tree.2$cptable[,"xerror"]),"CP"]
+new.tree2<-prune(tree.2, cp=0)
+#plot tree
+rpart.plot(new.tree2,type=3,extra=100)
+
+cyc_long$predicted<-predict(new.tree2)
+mod5<-lm(measurement~predicted,data=cyc_long)
+summary(mod5)
+
+plot(cyc_long$measurement,cyc_long$predicted)
+abline(mod5)
+```
+
