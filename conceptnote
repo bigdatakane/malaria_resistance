@@ -1,0 +1,16 @@
+
+Title: Dissecting an adaptive landscape in terms of the interction between individual mutation effects and the environment
+
+What:
+In this project, we deconstruct an adaptive landscape for drug resistance by describing it, not by the unit of “trajectory,” but by the effects of individual mutations on individual backgrounds, in certain environments. In this sense, it is somewhat a measure of G x G x E interactions.
+
+Why important:
+Important because we need models of protein evolution that better fit more realistic settings: polymorphism, with various starting pointsTo do that, we need to describe evolution across the landscape in terms of individual mutation events, rather than discrete trajectories (“trajectories” are basically just statistical descriptions of frequency space).  
+
+Data:
+- Adaptive landscapes of P. falciparum in CYC and PYR, DHFR, 16 alleles
+- Possibly bacterial data (cmon)
+
+Analysis
+- Machine learning algorithms to dissect mutation effects
+- GLM or some other regression method for G x G x E effects
